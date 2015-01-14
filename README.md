@@ -1,7 +1,7 @@
 Joomla2.5.999
 =============
 
-Joomla 2.5.x End Of Life + all hot fixes from the community
+Joomla 2.5.28 End Of Support (Then will be end of life) + All hot fixes from the community as and when security issues arise after end of official support.
 
 This repo is a stock Joomla 2.5.28 install as provided officially by Joomla.org, but then with all community suppied hotfixes as and when available.
 
