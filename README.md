@@ -12,4 +12,4 @@ Like it or not, Joomla 2.5.x series is now end of support, but still powers a hu
 
 History
 =============
-No changes since Joomla 2.5.28 release
+ - [20151214] - Core - Remote Code Execution Vulnerability
