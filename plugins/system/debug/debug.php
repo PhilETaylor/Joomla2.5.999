@@ -246,7 +246,7 @@ class plgSystemDebug extends JPlugin
 	{
 		if (!$session)
 		{
-			$session = $_SESSION;
+			$session = JFactory::getSession()->getData();
 		}
 
 		static $html = '';

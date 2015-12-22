@@ -74,6 +74,13 @@ class JSession extends JObject
 	protected $_force_ssl = false;
 
 	/**
+	 * Internal data store for the session data
+	 *
+	 * @var  JRegistry
+	 */
+	protected $data;
+
+	/**
 	 * @var    JSession  JSession instances container.
 	 * @since  11.3
 	 */
@@ -312,6 +319,16 @@ class JSession extends JObject
 	}
 
 	/**
+	 * Returns a clone of the internal data pointer
+	 *
+	 * @return  JRegistry
+	 */
+	public function getData()
+	{
+		return clone $this->data;
+	}
+
+	/**
 	 * Get session id
 	 *
 	 * @return  string  The session name
@@ -401,11 +418,7 @@ class JSession extends JObject
 			return $error;
 		}
 
-		if (isset($_SESSION[$namespace][$name]))
-		{
-			return $_SESSION[$namespace][$name];
-		}
-		return $default;
+		return $this->data->get($namespace . '.' . $name, $default);
 	}
 
 	/**
@@ -430,18 +443,7 @@ class JSession extends JObject
 			return null;
 		}
 
-		$old = isset($_SESSION[$namespace][$name]) ? $_SESSION[$namespace][$name] : null;
-
-		if (null === $value)
-		{
-			unset($_SESSION[$namespace][$name]);
-		}
-		else
-		{
-			$_SESSION[$namespace][$name] = $value;
-		}
-
-		return $old;
+		return $this->data->set($namespace . '.' . $name, $value);
 	}
 
 	/**
@@ -465,7 +467,7 @@ class JSession extends JObject
 			return null;
 		}
 
-		return isset($_SESSION[$namespace][$name]);
+		return !is_null($this->data->get($namespace . '.' . $name, null));
 	}
 
 	/**
@@ -489,14 +491,7 @@ class JSession extends JObject
 			return null;
 		}
 
-		$value = null;
-		if (isset($_SESSION[$namespace][$name]))
-		{
-			$value = $_SESSION[$namespace][$name];
-			unset($_SESSION[$namespace][$name]);
-		}
-
-		return $value;
+		return $this->data->set($namespace . '.' . $name, null);
 	}
 
 	/**
@@ -533,8 +528,21 @@ class JSession extends JObject
 			}
 		}
 
+		register_shutdown_function(array($this, 'close'));
+
 		session_cache_limiter('none');
 		session_start();
+
+		// Ok let's unserialize the whole thing
+		$this->data = new JRegistry;
+
+		// Try loading data from the session
+		if (isset($_SESSION['joomla']) && !empty($_SESSION['joomla']))
+		{
+			$data = $_SESSION['joomla'];
+			$data = base64_decode($data);
+			$this->data = unserialize($data);
+		}
 
 		return true;
 	}
@@ -572,6 +580,8 @@ class JSession extends JObject
 			$cookie_path = $config->get('cookie_path', '/');
 			setcookie(session_name(), '', time() - 42000, $cookie_path, $cookie_domain);
 		}
+
+		$this->data = new JRegistry;
 
 		session_unset();
 		session_destroy();
@@ -671,14 +681,28 @@ class JSession extends JObject
 	 * frames by ending the session as soon as all changes to session variables are
 	 * done.
 	 *
-	 * @return  void
+	 * @return  boolean
 	 *
 	 * @see     session_write_close()
 	 * @since   11.1
 	 */
 	public function close()
 	{
+		if ($this->_state !== 'active')
+		{
+			// @TODO :: generated error here
+			return false;
+		}
+
+		$session = JFactory::getSession();
+		$data    = $session->getData();
+
+		// Before storing it, let's serialize and encode the JRegistry object
+		$_SESSION['joomla'] = base64_encode(serialize($data));
+
 		session_write_close();
+
+		return true;
 	}
 
 	/**
