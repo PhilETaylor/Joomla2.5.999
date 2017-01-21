@@ -7644,3 +7644,4 @@ function recursive_remove_directory($directory)
 		return TRUE;
 	}
 }
+?>
